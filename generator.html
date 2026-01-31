@@ -5,15 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Link Crafter</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        :root {
+            /* Dark Mode Palette */
+            --bg-color: #121212;        /* Very dark gray background */
+            --card-bg: #1e1e1e;         /* Slightly lighter card */
+            --text-main: #ffffff;       /* White text */
+            --text-sub: #a1a1aa;        /* Light gray subtext */
+            
+            --accent: #8b5cf6;          /* Violet accent */
+            --accent-hover: #7c3aed;
+            
+            --border-color: #3f3f46;    /* Dark gray borders */
+            --shadow-color: #000000;    /* Pure black shadows */
+            
+            --input-bg: #000000;        /* Black inputs */
+            --code-bg: #000000;
+            --code-text: #4ade80;       /* Bright Green terminal text */
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
 
         body {
-            background-color: #1a1a1a; /* Dirt/Deepslate background */
-            background-image: repeating-linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), repeating-linear-gradient(45deg, #222 25%, #1a1a1a 25%, #1a1a1a 75%, #222 75%, #222);
-            background-position: 0 0, 10px 10px;
-            background-size: 20px 20px;
-            color: #ffffff;
-            font-family: 'VT323', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -23,114 +42,145 @@
             padding: 20px;
         }
 
-        .mc-container {
-            background-color: #383838; /* Stone UI bg */
-            border: 4px solid #000;
-            box-shadow: inset 4px 4px 0px #5e5e5e, inset -4px -4px 0px #212121;
-            padding: 20px;
+        .container {
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            /* Deep black block shadow */
+            box-shadow: 8px 8px 0px var(--shadow-color);
+            padding: 40px;
             width: 100%;
             max-width: 600px;
-            text-align: center;
         }
 
         h2 {
-            font-size: 2.5rem;
-            color: #dcdcdc;
-            text-shadow: 3px 3px 0px #3f3f3f;
+            font-size: 2rem;
+            font-weight: 800;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             text-transform: uppercase;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
         }
 
         p {
-            font-size: 1.2rem;
-            color: #aaaaaa;
-            margin-bottom: 15px;
+            font-size: 1rem;
+            color: var(--text-sub);
+            margin-bottom: 25px;
+            line-height: 1.5;
         }
 
-        /* Minecraft Input Field */
+        /* Input Field - Darker and sharper */
         textarea {
-            width: calc(100% - 20px);
+            width: 100%;
             height: 150px;
-            background-color: #000;
-            color: #fff;
-            border: 2px solid #a0a0a0;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            border: 2px solid var(--border-color);
+            border-radius: 0;
             outline: none;
-            padding: 10px;
-            font-family: 'VT323', monospace;
-            font-size: 1.2rem;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
             resize: vertical;
             display: block;
-            margin: 0 auto;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
         }
 
         textarea:focus {
+            border-color: var(--accent);
+        }
+
+        textarea::placeholder {
+            color: #52525b;
+        }
+
+        /* Modern Block Button */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px 0;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #fff;
+            background-color: var(--accent);
+            border: 2px solid var(--border-color);
+            border-radius: 0;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--shadow-color);
+            transition: all 0.1s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px var(--shadow-color);
             border-color: #fff;
         }
 
-        /* Minecraft Button Style */
-        .mc-btn {
-            display: block;
-            width: 100%;
-            margin-top: 20px;
-            padding: 10px 0;
-            font-family: 'VT323', monospace;
-            font-size: 1.5rem;
-            color: #ddd;
-            background-color: #747474;
-            border: none;
-            cursor: pointer;
-            /* The 3D button effect */
-            box-shadow: inset 2px 2px 0px #b1b1b1, inset -2px -2px 0px #404040, 2px 2px 0px #000;
-            text-shadow: 2px 2px #333;
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--shadow-color);
         }
 
-        .mc-btn:active {
-            background-color: #565656;
-            box-shadow: inset 2px 2px 0px #404040, inset -2px -2px 0px #b1b1b1;
-            transform: translateY(2px);
+        /* Secondary Button Style */
+        .btn-secondary {
+            background-color: #27272a; /* Dark gray */
+            color: var(--text-main);
+            margin-top: 15px;
+            border-color: var(--border-color);
         }
-
-        .mc-btn:hover {
-            background-color: #858585;
-            color: #ffffa0; /* Highlight color */
+        .btn-secondary:hover {
+            background-color: #3f3f46;
         }
 
         /* Result Area */
         #resultArea {
-            margin-top: 20px;
+            margin-top: 30px;
             display: none;
-            border-top: 2px dashed #555;
-            padding-top: 15px;
+            padding-top: 20px;
+            border-top: 2px dashed #3f3f46;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+            display: block;
         }
 
         .link-box {
-            background: #222;
-            border: 2px solid #555;
-            color: #55ff55;
-            padding: 10px;
-            font-size: 1.1rem;
+            background: var(--code-bg);
+            border: 2px solid var(--border-color);
+            color: var(--code-text);
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
             word-break: break-all;
-            margin-bottom: 10px;
-            text-align: left;
+            margin-bottom: 20px;
         }
 
     </style>
 </head>
 <body>
 
-<div class="mc-container">
+<div class="container">
     <h2>Link Crafter</h2>
-    <p>Paste your items below to craft a download link.</p>
+    <p>Paste your content below. The system will extract the necessary IDs and generate your formatted link.</p>
     
     <textarea id="inputArea" placeholder="[part1.001](url)&#10;[part2.002](url)"></textarea>
     
-    <button class="mc-btn" onclick="generateLink()">Craft Link</button>
+    <button class="btn" onclick="generateLink()">Generate Link</button>
 
     <div id="resultArea">
-        <p style="color: #fff; margin-bottom: 5px;">Result:</p>
+        <span class="label">Generated Output:</span>
         <div id="finalLink" class="link-box"></div>
-        <button class="mc-btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <button class="btn btn-secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
     </div>
 </div>
 
@@ -152,7 +202,12 @@
         }
 
         if (matches.length === 0) {
-            alert("No items found in the crafting grid!");
+            const originalPlaceholder = document.getElementById('inputArea').placeholder;
+            document.getElementById('inputArea').value = "";
+            document.getElementById('inputArea').placeholder = "Error: No matching items found. Please paste valid URLs.";
+            setTimeout(() => {
+                 document.getElementById('inputArea').placeholder = originalPlaceholder;
+            }, 3000);
             return;
         }
 
@@ -167,27 +222,17 @@
             return a.localeCompare(b);
         });
 
-        // Determine filename (use the first ID found)
+        // Determine filename
         let filename = matches[0];
-        // If it ends in .001, remove that extension to get the exe/7z name
         if (filename.match(/\.\d{3}$/)) {
             filename = filename.replace(/\.\d{3}$/, '');
         }
 
-        // ===============================================
-        // URL FIX: Go up one level from 'generator'
-        // ===============================================
-        let currentPath = window.location.pathname; // e.g., /repo/generator.html or /repo/generator/
-        
-        // Remove "generator.html" or just "generator/" from the end
+        // URL Generation
+        let currentPath = window.location.pathname; 
         let rootPath = currentPath.replace(/generator(\.html)?\/?$/, '');
-        
-        // Ensure we end with a slash so index.html picks it up
         if (!rootPath.endsWith('/')) rootPath += '/';
-        
-        // Combine Origin + Clean Path
         const baseUrl = window.location.origin + rootPath;
-        // ===============================================
 
         const params = new URLSearchParams();
         
@@ -206,13 +251,20 @@
     function copyToClipboard() {
         const link = document.getElementById('finalLink').textContent;
         navigator.clipboard.writeText(link).then(() => {
-            const btn = document.querySelector('#resultArea button');
+            const btn = document.querySelector('#resultArea .btn-secondary');
             const originalText = btn.textContent;
-            btn.textContent = "Copied!";
-            btn.style.color = "#55ff55";
+            
+            btn.textContent = "COPIED!";
+            // Success Green
+            btn.style.backgroundColor = "#10b981"; 
+            btn.style.color = "#000";
+            btn.style.borderColor = "#10b981";
+            
             setTimeout(() => {
                 btn.textContent = originalText;
-                btn.style.color = "#ddd";
+                btn.style.backgroundColor = ""; // Revert to CSS default
+                btn.style.color = "";
+                btn.style.borderColor = "";
             }, 2000);
         });
     }
