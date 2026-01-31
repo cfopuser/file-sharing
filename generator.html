@@ -3,84 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link Generator</title>
+    <title>Link Crafter</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
         body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: "Segoe UI", monospace;
-            padding: 20px;
+            background-color: #1a1a1a; /* Dirt/Deepslate background */
+            background-image: repeating-linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), repeating-linear-gradient(45deg, #222 25%, #1a1a1a 25%, #1a1a1a 75%, #222 75%, #222);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+            color: #ffffff;
+            font-family: 'VT323', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        .container { width: 100%; max-width: 600px; }
-        h2 { text-align: center; color: #58a6ff; }
-        
-        textarea {
-            width: 100%;
-            height: 150px;
-            background: #161b22;
-            color: #e6edf3;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            padding: 10px;
-            font-family: monospace;
-            resize: vertical;
-        }
-        
-        button {
-            width: 100%;
-            margin-top: 10px;
-            padding: 10px;
-            background: #238636;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        button:hover { background: #2ea043; }
-        
-        .output-box {
-            margin-top: 20px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            padding: 15px;
-            border-radius: 6px;
-            display: none; /* Hidden by default */
-        }
-        
-        .output-link {
-            word-break: break-all;
-            color: #58a6ff;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 10px;
-            padding: 10px;
-            border: 1px solid #30363d;
-            border-radius: 4px;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
         }
 
-        .copy-btn { background: #1f6feb; margin-top: 5px;}
-        .copy-btn:hover { background: #388bfd; }
+        .mc-container {
+            background-color: #383838; /* Stone UI bg */
+            border: 4px solid #000;
+            box-shadow: inset 4px 4px 0px #5e5e5e, inset -4px -4px 0px #212121;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: #dcdcdc;
+            text-shadow: 3px 3px 0px #3f3f3f;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #aaaaaa;
+            margin-bottom: 15px;
+        }
+
+        /* Minecraft Input Field */
+        textarea {
+            width: calc(100% - 20px);
+            height: 150px;
+            background-color: #000;
+            color: #fff;
+            border: 2px solid #a0a0a0;
+            outline: none;
+            padding: 10px;
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            resize: vertical;
+            display: block;
+            margin: 0 auto;
+        }
+
+        textarea:focus {
+            border-color: #fff;
+        }
+
+        /* Minecraft Button Style */
+        .mc-btn {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px 0;
+            font-family: 'VT323', monospace;
+            font-size: 1.5rem;
+            color: #ddd;
+            background-color: #747474;
+            border: none;
+            cursor: pointer;
+            /* The 3D button effect */
+            box-shadow: inset 2px 2px 0px #b1b1b1, inset -2px -2px 0px #404040, 2px 2px 0px #000;
+            text-shadow: 2px 2px #333;
+        }
+
+        .mc-btn:active {
+            background-color: #565656;
+            box-shadow: inset 2px 2px 0px #404040, inset -2px -2px 0px #b1b1b1;
+            transform: translateY(2px);
+        }
+
+        .mc-btn:hover {
+            background-color: #858585;
+            color: #ffffa0; /* Highlight color */
+        }
+
+        /* Result Area */
+        #resultArea {
+            margin-top: 20px;
+            display: none;
+            border-top: 2px dashed #555;
+            padding-top: 15px;
+        }
+
+        .link-box {
+            background: #222;
+            border: 2px solid #555;
+            color: #55ff55;
+            padding: 10px;
+            font-size: 1.1rem;
+            word-break: break-all;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🔗 Smart Link Generator</h2>
-    <p style="font-size: 0.9em; color: #8b949e;">Paste Mitmachim links (Markdown or Raw).<br>The order doesn't matter; I will sort them by .001, .002...</p>
+<div class="mc-container">
+    <h2>Link Crafter</h2>
+    <p>Paste your items below to craft a download link.</p>
     
-    <textarea id="inputArea" placeholder="Paste links here...&#10;[file.002](.../file.002)&#10;[file.001](.../file.001)"></textarea>
+    <textarea id="inputArea" placeholder="[part1.001](url)&#10;[part2.002](url)"></textarea>
     
-    <button onclick="generateLink()">Generate Magic Link</button>
+    <button class="mc-btn" onclick="generateLink()">Craft Link</button>
 
-    <div id="resultArea" class="output-box">
-        <strong>Your Link:</strong>
-        <a id="finalLink" href="#" target="_blank" class="output-link">...</a>
-        <button class="copy-btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+    <div id="resultArea">
+        <p style="color: #fff; margin-bottom: 5px;">Result:</p>
+        <div id="finalLink" class="link-box"></div>
+        <button class="mc-btn" onclick="copyToClipboard()">Copy to Clipboard</button>
     </div>
 </div>
 
@@ -90,82 +140,80 @@
         const resultArea = document.getElementById('resultArea');
         const finalLinkEl = document.getElementById('finalLink');
 
-        // 1. Regex to find the File ID part from the URL
-        // Matches anything after "uploads/files/" until a closing parenthesis, quote, or space
+        // Regex to extract IDs from mitmachim urls
         const regex = /\/assets\/uploads\/files\/([a-zA-Z0-9\.\-_\(\)]+)/g;
         
         let matches = [];
         let match;
         
-        // Extract all file IDs
         while ((match = regex.exec(text)) !== null) {
-            // Clean up: remove closing markdown parenthesis if captured by accident
             let id = match[1].replace(/\)$/, ''); 
             matches.push(id);
         }
 
         if (matches.length === 0) {
-            alert("No valid file links found!");
+            alert("No items found in the crafting grid!");
             return;
         }
 
-        // 2. Remove Duplicates
+        // Remove duplicates
         matches = [...new Set(matches)];
 
-        // 3. Sort Files (Crucial for split archives)
-        // We look for .001, .002 at the end of the string
+        // Sort by .001, .002
         matches.sort((a, b) => {
             const extA = a.match(/\.(\d{3})$/);
             const extB = b.match(/\.(\d{3})$/);
-            
-            // If both have numbers like .001, compare them
-            if (extA && extB) {
-                return parseInt(extA[1]) - parseInt(extB[1]);
-            }
-            // Otherwise standard string sort
+            if (extA && extB) return parseInt(extA[1]) - parseInt(extB[1]);
             return a.localeCompare(b);
         });
 
-        // 4. Guess the final filename
-        // Take the first file (e.g. game.7z.001) and remove the .001
+        // Determine filename (use the first ID found)
         let filename = matches[0];
+        // If it ends in .001, remove that extension to get the exe/7z name
         if (filename.match(/\.\d{3}$/)) {
             filename = filename.replace(/\.\d{3}$/, '');
-            // Also remove the timestamp prefix if you want cleaner names?
-            // Optional: Remove timestamp (1769...-filename)
-            // filename = filename.substring(filename.indexOf('-') + 1);
         }
 
-        // 5. Construct the URL
-        // Get the base URL of your site (assuming generator.html is in same folder as index.html)
-        // We replace 'generator.html' with nothing to get the root, or just use origin + pathname logic
-        let baseUrl = window.location.href.replace('generator.html', '');
+        // ===============================================
+        // URL FIX: Go up one level from 'generator'
+        // ===============================================
+        let currentPath = window.location.pathname; // e.g., /repo/generator.html or /repo/generator/
         
-        // Ensure it ends with /
-        if (!baseUrl.endsWith('/')) baseUrl += '/';
+        // Remove "generator.html" or just "generator/" from the end
+        let rootPath = currentPath.replace(/generator(\.html)?\/?$/, '');
+        
+        // Ensure we end with a slash so index.html picks it up
+        if (!rootPath.endsWith('/')) rootPath += '/';
+        
+        // Combine Origin + Clean Path
+        const baseUrl = window.location.origin + rootPath;
+        // ===============================================
 
         const params = new URLSearchParams();
         
-        // Add ?1=ID, ?2=ID
         matches.forEach((id, index) => {
             params.append((index + 1).toString(), id);
         });
 
-        // Add ?name=filename
         params.append('name', filename);
 
         const finalUrl = baseUrl + '?' + params.toString();
 
-        // 6. Display Result
         finalLinkEl.textContent = finalUrl;
-        finalLinkEl.href = finalUrl;
         resultArea.style.display = 'block';
     }
 
     function copyToClipboard() {
         const link = document.getElementById('finalLink').textContent;
         navigator.clipboard.writeText(link).then(() => {
-            alert("Link copied!");
+            const btn = document.querySelector('#resultArea button');
+            const originalText = btn.textContent;
+            btn.textContent = "Copied!";
+            btn.style.color = "#55ff55";
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.color = "#ddd";
+            }, 2000);
         });
     }
 </script>
