@@ -2,156 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Downloader</title>
+    <title>File Reassembler</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f4f9;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: "Segoe UI", monospace;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             height: 100vh;
             margin: 0;
-        }
-        .card {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 400px;
             text-align: center;
         }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+        #status { font-size: 1.2rem; margin-bottom: 20px; }
+        #progress-bar {
+            width: 300px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
         }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 16px;
+        #progress-fill {
+            height: 100%;
+            background: #238636;
+            width: 0%;
+            transition: width 0.2s;
         }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .status {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #555;
-            min-height: 20px;
-        }
-        .error { color: red; }
-        .success { color: green; }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>File Downloader</h2>
-        <p>Enter IDs or use URL parameters.</p>
-        
-        <input type="text" id="id1" placeholder="File ID 1">
-        <input type="text" id="id2" placeholder="File ID 2">
-        <button onclick="startDownload()">Download Files</button>
-        
-        <div id="status-area" class="status"></div>
-    </div>
+    <div id="status">Initializing...</div>
+    <div id="progress-bar"><div id="progress-fill"></div></div>
 
     <script>
-        // CONFIGURATION
-        // ---------------------------------------------------------
-        // PASTE YOUR WORKER URL HERE (Keep the ?url= at the end)
-        const PROXY_URL = 'https://mitm-proxy.cfop33user.workers.dev//?url='; 
-        
-        const BASE_FILE_URL = 'https://mitmachim.top/assets/uploads/files/';
-        // ---------------------------------------------------------
+        // ==============================
+        // CONFIG - PASTE YOUR WORKER URL
+        // ==============================
+        const PROXY_URL = 'https://mitmachim-proxy.yourname.workers.dev/?url=';
+        const BASE_DL_URL = 'https://mitmachim.top/assets/uploads/files/';
+        // ==============================
 
-        // Check URL parameters on load
-        window.addEventListener('DOMContentLoaded', () => {
+        const statusEl = document.getElementById('status');
+        const barEl = document.getElementById('progress-bar');
+        const fillEl = document.getElementById('progress-fill');
+
+        window.onload = async () => {
             const params = new URLSearchParams(window.location.search);
-            const f1 = params.get('f1');
-            const f2 = params.get('f2');
-
-            if(f1) document.getElementById('id1').value = f1;
-            if(f2) document.getElementById('id2').value = f2;
-
-            // Optional: Auto-start if params exist
-            if(f1 || f2) {
-                log("URL parameters detected. Please click Download.", "black");
+            
+            // 1. Detect parts (1=..., 2=..., 3=...)
+            let parts = [];
+            let i = 1;
+            while(params.has(String(i))) {
+                parts.push(params.get(String(i)));
+                i++;
             }
-        });
 
-        async function startDownload() {
-            const id1 = document.getElementById('id1').value.trim();
-            const id2 = document.getElementById('id2').value.trim();
+            // 2. Detect Desired Filename (Optional param &name=setup.exe)
+            // If not provided, we try to guess from the first part, removing .001
+            let finalFileName = params.get('name') || "downloaded-file.exe"; 
 
-            if(!id1 && !id2) {
-                log("Please enter at least one File ID.", "error");
+            if (parts.length === 0) {
+                statusEl.textContent = "No file parts found in URL.";
                 return;
             }
 
-            if(id1) await downloadSingleFile(id1);
-            if(id2) await downloadSingleFile(id2);
-        }
-
-        async function downloadSingleFile(fileId) {
-            const targetUrl = BASE_FILE_URL + fileId;
-            const fullUrl = PROXY_URL + encodeURIComponent(targetUrl);
-            
-            log(`Fetching ID: ${fileId}...`, "black");
+            statusEl.innerHTML = `Found ${parts.length} parts.<br>Starting download & merge...`;
+            barEl.style.display = 'block';
 
             try {
-                const response = await fetch(fullUrl);
-                
-                if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                // Array to hold the binary chunks
+                const fileChunks = [];
 
-                // Try to get filename from headers, otherwise use ID
-                let filename = fileId;
-                const disposition = response.headers.get('Content-Disposition');
-                if (disposition && disposition.indexOf('attachment') !== -1) {
-                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                    const matches = filenameRegex.exec(disposition);
-                    if (matches != null && matches[1]) { 
-                        filename = matches[1].replace(/['"]/g, '');
+                // Download all parts sequentially
+                for (let idx = 0; idx < parts.length; idx++) {
+                    const fileId = parts[idx];
+                    updateProgress(idx, parts.length, `Downloading part ${idx + 1} of ${parts.length}...`);
+                    
+                    const chunk = await downloadChunk(fileId);
+                    fileChunks.push(chunk);
+
+                    // Try to guess name from first part if not set in URL
+                    if (idx === 0 && !params.get('name')) {
+                        if (chunk.nameGuess) {
+                            // Remove trailing .001, .002 etc if present
+                            finalFileName = chunk.nameGuess.replace(/\.\d{3}$/, ''); 
+                        }
                     }
                 }
 
-                // Create a blob from the data
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
+                updateProgress(1, 1, "Merging files in memory...");
                 
-                // Trigger download
+                // Merge chunks into one Blob
+                const combinedBlob = new Blob(fileChunks.map(c => c.data), { type: "application/octet-stream" });
+                
+                // Trigger Download
+                const url = window.URL.createObjectURL(combinedBlob);
                 const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = filename;
+                a.href = url;
+                a.download = finalFileName;
                 document.body.appendChild(a);
                 a.click();
-                a.remove();
-                window.URL.revokeObjectURL(downloadUrl);
+                
+                statusEl.innerHTML = `<span style="color:#238636">Complete!</span><br>${finalFileName}`;
+                fillEl.style.width = '100%';
+                
+                setTimeout(() => window.URL.revokeObjectURL(url), 5000);
 
-                log(`Downloaded: ${filename}`, "success");
-
-            } catch (error) {
-                console.error(error);
-                log(`Error downloading ${fileId}: ${error.message}`, "error");
+            } catch (err) {
+                statusEl.textContent = "Error: " + err.message;
+                statusEl.style.color = "red";
             }
+        };
+
+        async function downloadChunk(fileId) {
+            const target = BASE_DL_URL + fileId;
+            const res = await fetch(PROXY_URL + encodeURIComponent(target));
+            
+            if (!res.ok) throw new Error(`Failed to load file ID ${fileId}`);
+
+            // Get buffer
+            const buffer = await res.arrayBuffer();
+            
+            // Get filename from header for guessing later
+            let nameGuess = null;
+            const disposition = res.headers.get('Content-Disposition');
+            if (disposition && disposition.includes('filename=')) {
+                const match = disposition.match(/filename="?([^"]+)"?/);
+                if (match) nameGuess = match[1];
+            }
+
+            return { data: buffer, nameGuess: nameGuess };
         }
 
-        function log(msg, type) {
-            const el = document.getElementById('status-area');
-            const span = document.createElement('div');
-            span.textContent = msg;
-            span.className = type;
-            el.appendChild(span);
+        function updateProgress(current, total, text) {
+            const pct = Math.round((current / total) * 100);
+            fillEl.style.width = pct + '%';
+            statusEl.innerHTML = text + ` <span class="blink">_</span>`;
         }
     </script>
 </body>
