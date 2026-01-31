@@ -2,149 +2,114 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>File Reassembler</title>
+    <title>Merger</title>
     <style>
-        body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: "Segoe UI", monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        #status { font-size: 1.2rem; margin-bottom: 20px; }
-        #progress-bar {
-            width: 300px;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-            overflow: hidden;
-            display: none;
-        }
-        #progress-fill {
-            height: 100%;
-            background: #238636;
-            width: 0%;
-            transition: width 0.2s;
-        }
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        body { background: #0d1117; color: #eee; font-family: monospace; text-align: center; padding-top: 50px; }
+        #log { margin-top: 20px; color: #8b949e; }
+        .error { color: #ff7b72; }
+        .success { color: #238636; font-weight: bold; }
+        #bar-container { width: 300px; height: 10px; background: #333; margin: 20px auto; display: none; }
+        #bar-fill { height: 100%; background: #238636; width: 0%; transition: width 0.1s; }
     </style>
 </head>
 <body>
-
-    <div id="status">Initializing...</div>
-    <div id="progress-bar"><div id="progress-fill"></div></div>
+    <h2>File Merger</h2>
+    <div id="bar-container"><div id="bar-fill"></div></div>
+    <div id="log">Waiting...</div>
 
     <script>
-        // ==============================
-        // CONFIG - PASTE YOUR WORKER URL
-        // ==============================
-        const PROXY_URL = 'https://mitmachim-proxy.yourname.workers.dev/?url=';
+        // ==========================================
+        // CONFIG: PASTE YOUR WORKER URL HERE
+        // ==========================================
+        const PROXY_URL = 'https://mitmachim-proxy.yourname.workers.dev/?url='; 
         const BASE_DL_URL = 'https://mitmachim.top/assets/uploads/files/';
-        // ==============================
+        // ==========================================
 
-        const statusEl = document.getElementById('status');
-        const barEl = document.getElementById('progress-bar');
-        const fillEl = document.getElementById('progress-fill');
+        const logEl = document.getElementById('log');
+        const barFill = document.getElementById('bar-fill');
+        const barCont = document.getElementById('bar-container');
 
-        window.onload = async () => {
+        function log(msg, type='') {
+            logEl.innerHTML = `<div class="${type}">${msg}</div>`;
+            console.log(msg);
+        }
+
+        async function init() {
             const params = new URLSearchParams(window.location.search);
-            
-            // 1. Detect parts (1=..., 2=..., 3=...)
-            let parts = [];
+            const parts = [];
             let i = 1;
+            
+            // Collect parts 1, 2, 3...
             while(params.has(String(i))) {
                 parts.push(params.get(String(i)));
                 i++;
             }
 
-            // 2. Detect Desired Filename (Optional param &name=setup.exe)
-            // If not provided, we try to guess from the first part, removing .001
-            let finalFileName = params.get('name') || "downloaded-file.exe"; 
-
-            if (parts.length === 0) {
-                statusEl.textContent = "No file parts found in URL.";
+            if(parts.length === 0) {
+                log("No file parts found (checked ?1=, ?2=...)", "error");
                 return;
             }
 
-            statusEl.innerHTML = `Found ${parts.length} parts.<br>Starting download & merge...`;
-            barEl.style.display = 'block';
+            const fileName = params.get('name') || "merged-file.exe";
+            barCont.style.display = 'block';
 
             try {
-                // Array to hold the binary chunks
-                const fileChunks = [];
-
-                // Download all parts sequentially
-                for (let idx = 0; idx < parts.length; idx++) {
-                    const fileId = parts[idx];
-                    updateProgress(idx, parts.length, `Downloading part ${idx + 1} of ${parts.length}...`);
+                const chunks = [];
+                
+                for(let k=0; k < parts.length; k++) {
+                    const percent = Math.round((k / parts.length) * 100);
+                    barFill.style.width = percent + '%';
+                    log(`Downloading part ${k+1} of ${parts.length}...`);
                     
-                    const chunk = await downloadChunk(fileId);
-                    fileChunks.push(chunk);
-
-                    // Try to guess name from first part if not set in URL
-                    if (idx === 0 && !params.get('name')) {
-                        if (chunk.nameGuess) {
-                            // Remove trailing .001, .002 etc if present
-                            finalFileName = chunk.nameGuess.replace(/\.\d{3}$/, ''); 
-                        }
-                    }
+                    const chunk = await downloadPart(parts[k]);
+                    chunks.push(chunk);
                 }
 
-                updateProgress(1, 1, "Merging files in memory...");
-                
-                // Merge chunks into one Blob
-                const combinedBlob = new Blob(fileChunks.map(c => c.data), { type: "application/octet-stream" });
-                
-                // Trigger Download
-                const url = window.URL.createObjectURL(combinedBlob);
+                barFill.style.width = '100%';
+                log("Merging files...", "success");
+
+                // Combine
+                const blob = new Blob(chunks, { type: 'application/octet-stream' });
+                const url = window.URL.createObjectURL(blob);
+
+                // Download
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = finalFileName;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 
-                statusEl.innerHTML = `<span style="color:#238636">Complete!</span><br>${finalFileName}`;
-                fillEl.style.width = '100%';
-                
-                setTimeout(() => window.URL.revokeObjectURL(url), 5000);
+                log(`Saved as: ${fileName}`, "success");
+                setTimeout(() => window.URL.revokeObjectURL(url), 10000);
 
-            } catch (err) {
-                statusEl.textContent = "Error: " + err.message;
-                statusEl.style.color = "red";
+            } catch (error) {
+                log(`ERROR: ${error.message}`, "error");
             }
-        };
-
-        async function downloadChunk(fileId) {
-            const target = BASE_DL_URL + fileId;
-            const res = await fetch(PROXY_URL + encodeURIComponent(target));
-            
-            if (!res.ok) throw new Error(`Failed to load file ID ${fileId}`);
-
-            // Get buffer
-            const buffer = await res.arrayBuffer();
-            
-            // Get filename from header for guessing later
-            let nameGuess = null;
-            const disposition = res.headers.get('Content-Disposition');
-            if (disposition && disposition.includes('filename=')) {
-                const match = disposition.match(/filename="?([^"]+)"?/);
-                if (match) nameGuess = match[1];
-            }
-
-            return { data: buffer, nameGuess: nameGuess };
         }
 
-        function updateProgress(current, total, text) {
-            const pct = Math.round((current / total) * 100);
-            fillEl.style.width = pct + '%';
-            statusEl.innerHTML = text + ` <span class="blink">_</span>`;
+        async function downloadPart(fileId) {
+            // Construct the exact URL
+            const fileUrl = BASE_DL_URL + fileId;
+            
+            // Encode it properly for the worker
+            const workerRequestUrl = PROXY_URL + encodeURIComponent(fileUrl);
+            
+            // Debug log to console (F12)
+            console.log("Fetching:", workerRequestUrl);
+
+            const response = await fetch(workerRequestUrl, {
+                method: 'GET',
+                mode: 'cors' // Explicitly request CORS
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server Error ${response.status} for file ID ${fileId}`);
+            }
+
+            return await response.arrayBuffer();
         }
+
+        window.onload = init;
     </script>
 </body>
 </html>
