@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Downloader</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 400px;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+            min-height: 20px;
+        }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>File Downloader</h2>
+        <p>Enter IDs or use URL parameters.</p>
+        
+        <input type="text" id="id1" placeholder="File ID 1">
+        <input type="text" id="id2" placeholder="File ID 2">
+        <button onclick="startDownload()">Download Files</button>
+        
+        <div id="status-area" class="status"></div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        // ---------------------------------------------------------
+        // PASTE YOUR WORKER URL HERE (Keep the ?url= at the end)
+        const PROXY_URL = 'https://mitm-proxy.cfop33user.workers.dev//?url='; 
+        
+        const BASE_FILE_URL = 'https://mitmachim.top/assets/uploads/files/';
+        // ---------------------------------------------------------
+
+        // Check URL parameters on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const f1 = params.get('f1');
+            const f2 = params.get('f2');
+
+            if(f1) document.getElementById('id1').value = f1;
+            if(f2) document.getElementById('id2').value = f2;
+
+            // Optional: Auto-start if params exist
+            if(f1 || f2) {
+                log("URL parameters detected. Please click Download.", "black");
+            }
+        });
+
+        async function startDownload() {
+            const id1 = document.getElementById('id1').value.trim();
+            const id2 = document.getElementById('id2').value.trim();
+
+            if(!id1 && !id2) {
+                log("Please enter at least one File ID.", "error");
+                return;
+            }
+
+            if(id1) await downloadSingleFile(id1);
+            if(id2) await downloadSingleFile(id2);
+        }
+
+        async function downloadSingleFile(fileId) {
+            const targetUrl = BASE_FILE_URL + fileId;
+            const fullUrl = PROXY_URL + encodeURIComponent(targetUrl);
+            
+            log(`Fetching ID: ${fileId}...`, "black");
+
+            try {
+                const response = await fetch(fullUrl);
+                
+                if (!response.ok) throw new Error(`Server returned ${response.status}`);
+
+                // Try to get filename from headers, otherwise use ID
+                let filename = fileId;
+                const disposition = response.headers.get('Content-Disposition');
+                if (disposition && disposition.indexOf('attachment') !== -1) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+
+                // Create a blob from the data
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                
+                // Trigger download
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                log(`Downloaded: ${filename}`, "success");
+
+            } catch (error) {
+                console.error(error);
+                log(`Error downloading ${fileId}: ${error.message}`, "error");
+            }
+        }
+
+        function log(msg, type) {
+            const el = document.getElementById('status-area');
+            const span = document.createElement('div');
+            span.textContent = msg;
+            span.className = type;
+            el.appendChild(span);
+        }
+    </script>
+</body>
+</html>
