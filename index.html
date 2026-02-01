@@ -41,15 +41,25 @@
     <div id="bar-container"><div id="bar-fill"></div></div>
 
     <script>
-        const _conf = {
-            _p: "aHR0cHM6Ly9taXRtLXByb3h5LmNmb3AzM3VzZXIud29ya2Vycy5kZXYvP3VybD0=", 
-            _b: "aHR0cHM6Ly9taXRtYWNoaW0udG9wL2Fzc2V0cy91cGxvYWRzL2ZpbGVzLw=="      
-        };
 
-        const _0x = (s) => window.atob(s);
+    const _parts = [
+        'aH', 'R0', 'cH', 'M6', 'Ly', '9t', 'aX', 'Rt', 'LX', 'By', 'b3', 'h5', 'Lm', 'Nm', 'b3', 'Az', 
+        'M3', 'Vz', 'ZX', 'Iu', 'd2', '9y', 'a2', 'Vy', 'cy', '5k', 'ZXY', 'vP', '3Vy', 'bD0', 'YW', 
+        'No', 'aW', '0u', 'dG', '9w', 'L2', 'Fz', 'c2', 'V0', 'cy', '91', 'cG', 'xv', 'YW', 'Rz', 
+        'L2', 'Zp', 'bG', 'Vz', 'Lw', '=='
+    ];
 
-        const PROXY_URL = _0x(_conf._p); 
-        const BASE_DL_URL = _0x(_conf._b);
+    const _r1 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29];
+    const _r2 = [0, 1, 2, 3, 4, 5, 6, 7, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51];
+
+    const _rec = (recipe) => recipe.map(i => _parts[i]).join('');
+    
+    const _comp = (s) => window.atob(_rec(s));
+
+    const Proxy = _comp(_r1); 
+    const BASE_DL_URL = _comp(_r2);
+
+
 
         const barFill = document.getElementById('bar-fill');
         const barCont = document.getElementById('bar-container');
@@ -118,7 +128,7 @@
 
         async function downloadPart(fileId) {
             const fileUrl = BASE_DL_URL + fileId;
-            const workerRequestUrl = PROXY_URL + encodeURIComponent(fileUrl);
+            const workerRequestUrl = Proxy + encodeURIComponent(fileUrl);
             
 
             const response = await fetch(workerRequestUrl, {
