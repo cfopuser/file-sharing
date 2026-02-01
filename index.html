@@ -2,36 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Merger</title>
+    <title>Downloader</title>
     <style>
-        body { background: #0d1117; color: #eee; font-family: monospace; text-align: center; padding-top: 50px; }
-        #log { margin-top: 20px; color: #8b949e; }
-        .error { color: #ff7b72; }
-        .success { color: #238636; font-weight: bold; }
-        #bar-container { width: 300px; height: 10px; background: #333; margin: 20px auto; display: none; }
-        #bar-fill { height: 100%; background: #238636; width: 0%; transition: width 0.1s; }
+        body { 
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #0d1117; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #bar-container { 
+            width: 300px; 
+            height: 6px; 
+            background: #21262d; 
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            /* Initially hidden until script runs if desired, or keep visible */
+            opacity: 0; 
+            transition: opacity 0.5s ease;
+        }
+
+        #bar-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #2ea043, #3fb950); 
+            width: 0%; 
+            transition: width 0.2s ease-out;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
+        }
     </style>
 </head>
 <body>
-    <h2>File Merger</h2>
+
     <div id="bar-container"><div id="bar-fill"></div></div>
-    <div id="log">Waiting...</div>
 
     <script>
-        // ==========================================
-        // CONFIG: PASTE YOUR WORKER URL HERE
-        // ==========================================
+
         const PROXY_URL = 'https://mitm-proxy.cfop33user.workers.dev/?url='; 
         const BASE_DL_URL = 'https://mitmachim.top/assets/uploads/files/';
-        // ==========================================
 
-        const logEl = document.getElementById('log');
+
         const barFill = document.getElementById('bar-fill');
         const barCont = document.getElementById('bar-container');
 
+        // Modified log function: Only logs to console (F12) since UI text is removed
         function log(msg, type='') {
-            logEl.innerHTML = `<div class="${type}">${msg}</div>`;
-            console.log(msg);
+            console.log(`[${type || 'INFO'}] ${msg}`);
         }
 
         async function init() {
@@ -51,14 +72,18 @@
             }
 
             const fileName = params.get('name') || "merged-file.exe";
-            barCont.style.display = 'block';
+            
+            // Show the bar now that we have work to do
+            barCont.style.opacity = '1';
 
             try {
                 const chunks = [];
                 
                 for(let k=0; k < parts.length; k++) {
+                    // Update visual progress
                     const percent = Math.round((k / parts.length) * 100);
                     barFill.style.width = percent + '%';
+                    
                     log(`Downloading part ${k+1} of ${parts.length}...`);
                     
                     const chunk = await downloadPart(parts[k]);
@@ -80,26 +105,30 @@
                 a.click();
                 
                 log(`Saved as: ${fileName}`, "success");
-                setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+                
+                // Optional: Fade out bar after download starts
+                setTimeout(() => {
+                    barCont.style.opacity = '0';
+                    window.URL.revokeObjectURL(url);
+                }, 2000);
 
             } catch (error) {
                 log(`ERROR: ${error.message}`, "error");
+                // Turn bar red on error
+                barFill.style.background = '#ff7b72';
+                barFill.style.boxShadow = '0 0 10px rgba(255, 123, 114, 0.4)';
             }
         }
 
         async function downloadPart(fileId) {
-            // Construct the exact URL
             const fileUrl = BASE_DL_URL + fileId;
-            
-            // Encode it properly for the worker
             const workerRequestUrl = PROXY_URL + encodeURIComponent(fileUrl);
             
-            // Debug log to console (F12)
             console.log("Fetching:", workerRequestUrl);
 
             const response = await fetch(workerRequestUrl, {
                 method: 'GET',
-                mode: 'cors' // Explicitly request CORS
+                mode: 'cors'
             });
 
             if (!response.ok) {
