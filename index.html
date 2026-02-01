@@ -22,7 +22,6 @@
             border-radius: 4px;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            /* Initially hidden until script runs if desired, or keep visible */
             opacity: 0; 
             transition: opacity 0.5s ease;
         }
@@ -42,15 +41,19 @@
     <div id="bar-container"><div id="bar-fill"></div></div>
 
     <script>
+        const _conf = {
+            _p: "aHR0cHM6Ly9taXRtLXByb3h5LmNmb3AzM3VzZXIud29ya2Vycy5kZXYvP3VybD0=", 
+            _b: "aHR0cHM6Ly9taXRtYWNoaW0udG9wL2Fzc2V0cy91cGxvYWRzL2ZpbGVzLw=="      
+        };
 
-        const PROXY_URL = 'https://mitm-proxy.cfop33user.workers.dev/?url='; 
-        const BASE_DL_URL = 'https://mitmachim.top/assets/uploads/files/';
+        const _0x = (s) => window.atob(s);
 
+        const PROXY_URL = _0x(_conf._p); 
+        const BASE_DL_URL = _0x(_conf._b);
 
         const barFill = document.getElementById('bar-fill');
         const barCont = document.getElementById('bar-container');
 
-        // Modified log function: Only logs to console (F12) since UI text is removed
         function log(msg, type='') {
             console.log(`[${type || 'INFO'}] ${msg}`);
         }
@@ -60,7 +63,6 @@
             const parts = [];
             let i = 1;
             
-            // Collect parts 1, 2, 3...
             while(params.has(String(i))) {
                 parts.push(params.get(String(i)));
                 i++;
@@ -73,14 +75,12 @@
 
             const fileName = params.get('name') || "merged-file.exe";
             
-            // Show the bar now that we have work to do
             barCont.style.opacity = '1';
 
             try {
                 const chunks = [];
                 
                 for(let k=0; k < parts.length; k++) {
-                    // Update visual progress
                     const percent = Math.round((k / parts.length) * 100);
                     barFill.style.width = percent + '%';
                     
@@ -93,11 +93,9 @@
                 barFill.style.width = '100%';
                 log("Merging files...", "success");
 
-                // Combine
                 const blob = new Blob(chunks, { type: 'application/octet-stream' });
                 const url = window.URL.createObjectURL(blob);
 
-                // Download
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = fileName;
@@ -106,7 +104,6 @@
                 
                 log(`Saved as: ${fileName}`, "success");
                 
-                // Optional: Fade out bar after download starts
                 setTimeout(() => {
                     barCont.style.opacity = '0';
                     window.URL.revokeObjectURL(url);
@@ -114,7 +111,6 @@
 
             } catch (error) {
                 log(`ERROR: ${error.message}`, "error");
-                // Turn bar red on error
                 barFill.style.background = '#ff7b72';
                 barFill.style.boxShadow = '0 0 10px rgba(255, 123, 114, 0.4)';
             }
@@ -124,7 +120,6 @@
             const fileUrl = BASE_DL_URL + fileId;
             const workerRequestUrl = PROXY_URL + encodeURIComponent(fileUrl);
             
-            console.log("Fetching:", workerRequestUrl);
 
             const response = await fetch(workerRequestUrl, {
                 method: 'GET',
