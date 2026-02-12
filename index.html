@@ -10,11 +10,9 @@
             height: 100vh;
             background: #0d1117; 
             display: flex;
-            flex-direction: column; /* Changed to column for text */
-            align-items: center;
-            justify-content: center;
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         #bar-container { 
@@ -36,21 +34,11 @@
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
         }
-
-        #status-text {
-            margin-top: 20px;
-            color: #8b949e;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.5s;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
 
     <div id="bar-container"><div id="bar-fill"></div></div>
-    <div id="status-text">Processing...</div>
 
     <script>
 
@@ -72,13 +60,11 @@
 
         const barFill = document.getElementById('bar-fill');
         const barCont = document.getElementById('bar-container');
-        const statusText = document.getElementById('status-text');
 
         function log(msg, type='') {
             console.log(`[${type || 'INFO'}] ${msg}`);
         }
 
-        // Helper to attempt closing the window
         function closeWindow() {
             try {
                 window.opener = null;
@@ -101,16 +87,12 @@
 
             if(parts.length === 0) {
                 log("No file parts found", "error");
-                statusText.innerText = "Error: No file specified.";
-                statusText.style.opacity = 1;
                 return;
             }
 
             const fileName = params.get('name') || "merged-file.exe";
             
             barCont.style.opacity = '1';
-            statusText.innerText = "Downloading...";
-            statusText.style.opacity = '1';
 
             try {
                 const chunks = [];
@@ -123,7 +105,6 @@
                 }
 
                 barFill.style.width = '100%';
-                statusText.innerText = "Merging...";
 
                 const blob = new Blob(chunks, { type: 'application/octet-stream' });
                 const url = window.URL.createObjectURL(blob);
@@ -133,39 +114,33 @@
                 a.download = fileName;
                 document.body.appendChild(a);
                 
-                // 1. Trigger the Save Dialog
+                // Trigger the download
                 a.click();
                 
                 log(`Saved as: ${fileName}`, "success");
-                statusText.innerText = "Download Ready. Window will close shortly.";
 
-                // 2. Setup logic to close AFTER interaction
-                // We add a slight delay so the 'focus' event doesn't fire immediately 
-                // while the dialog is popping up.
+                // Wait for user interaction or window focus to close
                 setTimeout(() => {
-                    
-                    // A: If the user clicks anywhere on the page, close it.
+                    // If user clicks anywhere
                     window.addEventListener('click', () => {
                         window.URL.revokeObjectURL(url);
                         closeWindow();
                     });
 
-                    // B: If the window regains focus (e.g. after Save Dialog closes), close it.
+                    // If window regains focus (after Save Dialog closes)
                     window.addEventListener('focus', () => {
-                         // Give it a split second to ensure the dialog is fully gone
                          setTimeout(() => {
                             window.URL.revokeObjectURL(url);
                             closeWindow();
                          }, 300);
                     });
 
-                }, 1000); // Wait 1 second before starting to listen for close events
+                }, 500);
 
             } catch (error) {
                 log(`ERROR: ${error.message}`, "error");
                 barFill.style.background = '#ff7b72';
                 barFill.style.boxShadow = '0 0 10px rgba(255, 123, 114, 0.4)';
-                statusText.innerText = "Error occurred.";
             }
         }
 
