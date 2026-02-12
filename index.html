@@ -10,9 +10,11 @@
             height: 100vh;
             background: #0d1117; 
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            font-family: sans-serif;
         }
 
         #bar-container { 
@@ -34,11 +36,21 @@
             border-radius: 4px;
             box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
         }
+
+        /* Added a status message style */
+        #status-msg {
+            margin-top: 15px;
+            color: #8b949e;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
     </style>
 </head>
 <body>
 
     <div id="bar-container"><div id="bar-fill"></div></div>
+    <div id="status-msg">Download started. You can close this tab.</div>
 
     <script>
 
@@ -59,10 +71,9 @@
     const Proxy = _comp(_r1); 
     const BASE_DL_URL = _comp(_r2);
 
-
-
         const barFill = document.getElementById('bar-fill');
         const barCont = document.getElementById('bar-container');
+        const statusMsg = document.getElementById('status-msg');
 
         function log(msg, type='') {
             console.log(`[${type || 'INFO'}] ${msg}`);
@@ -114,16 +125,23 @@
                 
                 log(`Saved as: ${fileName}`, "success");
                 
+                // Show status message in case window doesn't close
+                statusMsg.style.opacity = '1';
+
+                // Attempt to close window after a short delay
                 setTimeout(() => {
                     barCont.style.opacity = '0';
                     window.URL.revokeObjectURL(url);
-                    window.close();
-                                        setTimeout(() => {
-                        if (!window.closed) {
-                           document.body.innerHTML = '<h1 style="color: #c9d1d9; font-family: sans-serif; font-size: 14px;">Download Complete. You can close this tab.</h1>';
-                        }
-                    }, 500);
-                }, 2000);
+                    
+                    // Attempt to close the window
+                    try {
+                        window.close();
+                        // Fallback hack for some older browsers
+                        window.open(window.location, '_self').close();
+                    } catch (e) {
+                        console.log("Browser prevented auto-close.");
+                    }
+                }, 1000);
 
             } catch (error) {
                 log(`ERROR: ${error.message}`, "error");
