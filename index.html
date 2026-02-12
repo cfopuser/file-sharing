@@ -117,6 +117,12 @@
                 setTimeout(() => {
                     barCont.style.opacity = '0';
                     window.URL.revokeObjectURL(url);
+                    window.close();
+                                        setTimeout(() => {
+                        if (!window.closed) {
+                           document.body.innerHTML = '<h1 style="color: #c9d1d9; font-family: sans-serif; font-size: 14px;">Download Complete. You can close this tab.</h1>';
+                        }
+                    }, 500);
                 }, 2000);
 
             } catch (error) {
